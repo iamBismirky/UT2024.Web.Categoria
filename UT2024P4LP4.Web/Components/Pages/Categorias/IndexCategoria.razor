@@ -1,0 +1,256 @@
+﻿@rendermode InteractiveServer
+@attribute [StreamRendering]
+@page "/Categorias"
+@using UT2024P4LP4.Web.Data.Entities;
+@using UT2024P4LP4.Web.Constants;
+
+<h3>Categoria</h3>
+
+
+
+@*Formulario de accion*@
+@if (ShowForm)
+
+{
+	<div class="card">
+		<h5 class="card-header">@Accion categoria</h5>
+		<div class="card-body">
+			<div class="mb-3 mt-3">
+				<label for="nombre" class="form-label">Nombre Categoria</label>
+				<input @bind-value="MiCategoria.Nombre" disabled="@DisableInputs" type="text" class="form-control mb-3" id="nombre" placeholder="Escribir el nombre">
+				@if (Accion == Constants.Acciones.Registrar || Accion == Constants.Acciones.Modificar || Accion == Constants.Acciones.Eliminar)
+
+				{
+					<span class="btn btn-primary" @onclick="Aceptar">Aceptar</span>
+				}
+				<span class="btn btn-danger" @onclick="btnCancelarClick">Cancelar</span>
+			</div>
+		</div>
+	</div>
+}
+
+
+
+else
+
+{
+	@*Tabla de categorias*@
+	@if (CategoriaList != null)
+
+	{
+		<button @onclick="btnAgregarClick" type="button" class="btn btn-primary">Agregar Categoria</button>
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">#</th>
+					<th scope="col">Nombre</th>
+					<th scope="col">Acciones</th>
+
+				</tr>
+			</thead>
+			<tbody>
+				@if (Categorias?.Count > 0)
+
+				{
+					@foreach (var Categoria in Categorias)
+
+					{
+						<tr>
+							<th scope="row">@Categoria.Id</th>
+							<td>@Categoria.Nombre</td>
+							<td>
+								<div class="btn-group" role="group" aria-label="Basic mixed styles example">
+									<span @onclick="()=>btnEditarClick(Categoria)" class="btn btn-outline-secondary">Editar</span>
+									<span @onclick="()=>btnEliminarClick(Categoria)" class="btn btn-outline-danger">Eliminar</span>
+								</div>
+							</td>
+						</tr>
+					}
+				}
+
+			</tbody>
+		</table>
+	}
+
+}
+@code {
+
+	public void btnAgregarClick()
+
+	{
+
+		Accion = Constants.Acciones.Registrar;
+
+		ShowForm = true;
+
+		StateHasChanged();
+
+		DisableInputs = false;
+
+	}
+
+	public void btnEditarClick(CategoriaDto dto)
+
+	{
+
+		Accion = Constants.Acciones.Modificar;
+
+		ShowForm = true;
+
+		DisableInputs = false;
+
+		MiCategoria = dto.ToRequest();
+
+	}
+
+	public void btnEliminarClick(CategoriaDto dto)
+
+	{
+
+		Accion = Constants.Acciones.Eliminar;
+
+		ShowForm = true;
+
+		DisableInputs = true;
+
+		MiCategoria = dto.ToRequest();
+
+	}
+
+
+
+	public void btnCancelarClick()
+
+	{
+
+
+
+		Limpiar();
+
+
+
+	}
+
+	bool ShowForm = false, DisableInputs = false;
+
+
+
+	public List<CategoriaDto>? CategoriaList { get; set; } = new();
+
+	public List<CategoriaDto>? Categorias { get; set; }
+
+	public CategoriaRequest MiCategoria { get; set; } = new();
+
+	public string Accion { get; set; } = "Registrar";
+
+
+
+
+
+
+
+	protected override async Task OnInitializedAsync()
+
+	{
+
+		await ConsultarCategorias();
+
+		await Consultar();
+
+
+
+	}
+
+	async Task ConsultarCategorias()
+
+	{
+
+		var result = await categoriaService.GetAll();
+
+		if (result.Succesd)
+
+		{
+
+			Categorias =
+
+			result.Data?.ToList()
+
+			??
+
+			new List<CategoriaDto>();
+
+		}
+
+	}
+
+	async Task Consultar()
+
+	{
+
+
+
+		var result = await categoriaService.Get();
+
+		if (result.Succesd)
+
+		{
+
+			CategoriaList =
+
+			result.Data?.ToList()
+
+			??
+
+			new List<CategoriaDto>();
+
+		}
+
+	}
+
+	public void Limpiar()
+
+	{
+
+		ShowForm = false;
+
+		MiCategoria = new();
+
+		StateHasChanged();
+
+	}
+
+	public async Task Aceptar()
+
+	{
+
+		Result r =
+
+		Accion == Constants.Acciones.Registrar ? await categoriaService.Create(MiCategoria) :
+
+		Accion == Constants.Acciones.Modificar ? await categoriaService.Update(MiCategoria) :
+
+		Accion == Constants.Acciones.Eliminar ? await categoriaService.Delete(MiCategoria.Id) :
+
+		Accion == Constants.Acciones.Registrar ? Result.Success("") :
+
+
+
+		Result.Failure("Accion no soportada");
+
+
+
+		if (r.Succesd)
+
+		{
+
+			await ConsultarCategorias();
+
+			Limpiar();
+
+
+
+		}
+
+	}
+
+}
